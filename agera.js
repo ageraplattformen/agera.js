@@ -4,7 +4,7 @@
 /***/ 598:
 /***/ (() => {
 
-// agera-sync.0.0.4.js 23-06-26 17:03
+// agera-sync.0.0.4.js 23-06-28 12:21
 // Data attributes: data-crm, data-redirect-utm, data-counter-update,
 // data-action-id, data-sign-method
 
@@ -16,12 +16,7 @@ function ageraSync(form) {
             document.querySelector("html").dataset.wfSite,
             "https://webflow.com/api/v1/form/"
         ),
-        counterUrl: "https://utils-api-git-experimental-vrejf.vercel.app/api/counter/",
-        // niceUtms:
-        //     Array.from(
-        //         new URLSearchParams(window.location.search),
-        //         ([key, value]) => `${key}: ${value}`
-        //     ) || "",
+        backendUrl: "https://utils-api.vercel.app",
         niceUtms: Array.from(
             new URLSearchParams(window.location.search),
             ([key, value]) => `${key}: ${value}`
@@ -38,6 +33,7 @@ function ageraSync(form) {
     };
     params.submitText = (params.submitButton && params.submitButton.value) || "";
 
+    // REMAP FORM DATA
     function remapFormData(form, keyMapping) {
         var remappedFormData = new FormData();
 
@@ -50,7 +46,7 @@ function ageraSync(form) {
         }
         return remappedFormData;
     }
-
+    // PREP DATA FOR EACH CRM
     const prepData = {
         baseData: {
             url: params.endpoint,
@@ -79,8 +75,8 @@ function ageraSync(form) {
                 body: uriBody.toString(),
             };
         },
+
         mailChimp(form) {
-            console.log("preppar data för mailchimp");
             const keyMapping = {
                 given_name: "FNAME",
                 family_name: "LNAME",
@@ -92,7 +88,6 @@ function ageraSync(form) {
                 country: "COUNTRY",
             };
             const formData = remapFormData(form, keyMapping);
-            // const formData = new FormData(form);
             const uriBody = new URLSearchParams(formData);
             uriBody.append("UTM", params.niceUtms);
             return {
@@ -105,6 +100,7 @@ function ageraSync(form) {
                 body: uriBody.toString(),
             };
         },
+
         zapier(form) {
             return {
                 ...prepData.baseData,
@@ -117,11 +113,10 @@ function ageraSync(form) {
             };
         },
 
-        /// AMNESTY
         amnesty(form) {
             return {
                 ...prepData.baseData,
-                url: "https://utils-api-git-experimental-vrejf.vercel.app/api/amnesty/",
+                url: new URL("/api/amnesty", params.backendUrl).toString(),
                 body: JSON.stringify({
                     form: {
                         ...Object.fromEntries(new FormData(form)),
@@ -133,16 +128,18 @@ function ageraSync(form) {
                 }),
             };
         },
+
         counter(counterName) {
             return {
                 ...prepData.baseData,
-                url: new URL(counterName, params.counterUrl.toString()),
+                url: new URL("api/counter/" + counterName, params.backendUrl).toString(),
                 body: JSON.stringify({
-                    name: "default",
-                    site: params.wfSiteId,
+                    form: "default",
+                    site_id: params.wfSiteId,
                 }),
             };
         },
+
         actionNetwork(form) {
             const formData = new FormData(form);
             return {
